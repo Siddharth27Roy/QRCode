@@ -82,11 +82,9 @@ if uploadedImage is not None:
 
 custom_css = """
 <style>
-    [class="stApp stAppEmbeddingId-sdu2per1cakv st-emotion-cache-13k62yr erw9t6i1"] {
-        background-color: #ff0000;
-    }
     [data-testid="stApp"] {
         background-color: #ff0000;
+        color: #000000
     }
 </style>
 """
