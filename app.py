@@ -76,4 +76,22 @@ if uploadedImage is not None:
         
         st.header('The image is:')
         st.header(result)
+ 
+        
+# Changing bg-color
+
+custom_css = """
+<style>
+    [class="stApp stAppEmbeddingId-sdu2per1cakv st-emotion-cache-13k62yr erw9t6i1"] {
+        background-color: #ff0000;
+    }
+    [data-testid="stApp"] {
+        background-color: #ff0000;
+    }
+</style>
+"""
+st.markdown(custom_css, unsafe_allow_html=True)
+        
+        
+        
         
