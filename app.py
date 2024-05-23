@@ -1,95 +1,96 @@
+from flask import Flask, request, render_template, redirect
+from werkzeug.utils import secure_filename
 import tensorflow as tf
-import streamlit as st
-from PIL import Image
 import numpy as np
 import os
 import cv2
+from PIL import Image
 
+# Initialize the Flask application
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+
+# Load the model
 model = tf.keras.models.load_model("model/finalmodel.keras")
 
 model.compile(
     optimizer='adam',
-    loss=tf.keras.losses.BinaryCrossentropy(),  # Assuming binary classification
+    loss=tf.keras.losses.BinaryCrossentropy(),  
     metrics=[
-        tf.keras.metrics.BinaryAccuracy(),  # Binary accuracy
-        tf.keras.metrics.Precision(),        # Precision
-        tf.keras.metrics.Recall(),           # Recall
-        tf.keras.metrics.AUC()               # Area under the ROC curve
+        tf.keras.metrics.BinaryAccuracy(),  
+        tf.keras.metrics.Precision(),       
+        tf.keras.metrics.Recall(),          
+        tf.keras.metrics.AUC()              
     ]
 )
 
-def saveUploadedImage(uploadedImage):
+def save_uploaded_image(uploaded_image):
     try:
-        with open(os.path.join('uploads',uploadedImage.name),'wb') as f:
-            f.write(uploadedImage.getbuffer())
-        return True
-    except: 
-        return False
+        filename = secure_filename(uploaded_image.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        uploaded_image.save(file_path)
+        return file_path
+    except Exception as e:
+        print("An error occurred while saving the image:", e)
+        return None
 
-def runModel(imgPath, model):
-    image = cv2.imread(imgPath)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  
+def run_model(img_path, model):
+    image = cv2.imread(img_path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     image = cv2.resize(image, (224, 224))
-    image = image / 255.0 
+    image = image / 255.0
 
     image = np.expand_dims(image, axis=0)
 
     predictions = model.predict(image)
 
-    predicted_class = 1 if predictions[0] > 0.5 else 0 
+    predicted_class = 1 if predictions[0] > 0.5 else 0
 
-    class_probabilities = predictions[0]
-    
-    # return class_probabilities
-    
     if predicted_class == 1:
         return "Benign"
     else:
         return "Malicious"
 
-def deleteUploadedImage(uploadedImage):
-    try:
-        # Remove the uploaded file after processing
-        os.remove(os.path.join('uploads', uploadedImage.name))
-        return True
-    except Exception as e:
-        print("An error occurred:", e)
-        return False
+# def delete_uploaded_image(img_path):
+#     try:
+#         os.remove(img_path)
+#         return True
+#     except Exception as e:
+#         print("An error occurred:", e)
+#         return False
 
-st.title('Hsfafaf')
+def delete_all_uploaded_images():
+    folder = app.config['UPLOAD_FOLDER']
+    for filename in os.listdir(folder):
+        if filename != '.gitkeep':  # Skip deletion of .gitkeep file
+            file_path = os.path.join(folder, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                print(f"An error occurred while deleting the file {file_path}: {e}")
 
-uploadedImage = st.file_uploader('Choose an image')
+@app.route('/')
+def home():
+    delete_all_uploaded_images()
+    return render_template('home.html')
 
-if uploadedImage is not None:
-    # save the image in uploads
-    if saveUploadedImage(uploadedImage):
-        # display image 
-        displayImage = Image.open(uploadedImage)
-        # process image 
-        result = runModel(os.path.join('uploads',uploadedImage.name), model)
-        # delete Image
-        deleteUploadedImage(uploadedImage)
-        
-        # display
-        st.header('Your Uploaded Image is:')
-        st.image(displayImage)
-        
-        st.header('The image is:')
-        st.header(result)
- 
-        
-# Changing bg-color
+@app.route('/model', methods=['GET', 'POST'])
+def upload_image():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            return redirect(request.url)
+        if file:
+            file_path = save_uploaded_image(file)
+            if file_path:
+                result = run_model(file_path, model)
+                # delete_uploaded_image(file_path)
+                return render_template('result.html', result=result, image_path=file_path)
+    delete_all_uploaded_images()
+    return render_template('upload.html')
 
-custom_css = """
-<style>
-    [data-testid="stApp"] {
-        background-color: #ff0000;
-        color: #000000
-    }
-</style>
-"""
-st.markdown(custom_css, unsafe_allow_html=True)
-        
-        
-        
-        
+if __name__ == "__main__":
+    app.run(debug=True)

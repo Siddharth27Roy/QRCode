@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static\styles\result.css">
+    <title>Result</title>
+</head>
+<body>
+    <div class="main-container">
+        <h1>Your Uploaded Image is:</h1>
+        <img src="{{ image_path }}" alt="Uploaded Image">
+        <h2>The image is: {{ result }}</h2>
+        <button onclick="window.location.href='/model'">Upload another image</button>
+        <button onclick="window.location.href='/'">Back to home</button>
+    </div>
+</body>
+</html>
